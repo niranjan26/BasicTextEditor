@@ -1,5 +1,6 @@
 from Tkinter import *
 from tkFileDialog import *
+import tkFont
 from tkSimpleDialog import askstring
 
 import ttk, tkFileDialog
@@ -114,23 +115,27 @@ def openRecent(ch):
 	
 
 #Function for Undo
-def undo(root, event=None):
-    if root.steps != 0:
-        root.steps -= 1
-        root.delete(0, END)
-        root.insert(END, root.changes[root.steps])
+def undo(text, event=None):
+    if text.steps != 0:
+        text.steps -= 1
+        text.delete(0, END)
+        text.insert(END, text.changes[text.steps])
 
 
 def redo(root, event=None):
-	if root.steps < len(root.changes):
-		root.delete(0, END)
-		root.insert(END, root.changes[root.steps])
-		root.steps += 1
+	if text.steps < len(text.changes):
+		text.delete(0, END)
+		text.insert(END, text.changes[text.steps])
+		text.steps += 1
 
 #Function for BOLD
 def bold():
-	  
-	text.tag_add('bt',SEL_FIRST,SEL_LAST)
+	current_tags = text.tag_names(SEL_FIRST)
+	if "bt" in current_tags :
+		text.tag_remove("bt", SEL_FIRST,SEL_LAST)
+	else:
+		text.tag_add("bt", SEL_FIRST,SEL_LAST)
+
 
 
 def onCut():
@@ -152,14 +157,26 @@ def onPaste():
             pass
 #Function for Font INC
 def OnBigger():
+	getFont = tkFont.Font(text,text.cget("font"))
 	global size
 	size=size+2
-	text.tag_configure('sel' ,font='helvetica %d ' %size)
+	getFont.configure(size=size)
+	text.tag_configure('size' ,font=getFont)
+	if text.tag_ranges('sel'):
+		text.tag_add('size',SEL_FIRST,SEL_LAST)
+	else:
+		text.config(font=getFont)
 
 def OnSmaller():
+	getFont = tkFont.Font(text,text.cget("font"))
 	global size
 	size=size-2
-	text.tag_configure('sel' ,font='helvetica %d ' %size) 
+	getFont.configure(size=size)
+	text.tag_configure('size' ,font=getFont)
+	if text.tag_ranges('sel'):
+		text.tag_add('size',SEL_FIRST,SEL_LAST)
+	else:
+		text.config(font=getFont)
 
 def doCheckSave() :
 	
@@ -187,22 +204,31 @@ def onFind():
 #Function for Italics
 
 def italic():
-	text.tag_configure('sel' ,font='helvetica 14 italic') 	
-	
+	current_tags = text.tag_names(SEL_FIRST)
+	if 'itl' in current_tags:
+		text.tag_remove('itl',SEL_FIRST,SEL_LAST)
+	else:
+		text.tag_add('itl',SEL_FIRST,SEL_LAST)
 
-def add_changes(root, event=None):
-	if root.get() != root.changes[-1]:
-		root.changes.append(root.get())
-		root.steps += 1
+def add_changes(text, event=None):
+	if text.get() != text.changes[-1]:
+		text.changes.append(text.get())
+		text.steps += 1
 
 def changefonts(value):
 	if value is FONT_OPTIONS[0] :
-		text.tag_configure('sel' ,font='Times')
+		customFont = 'Times '
 	elif value is FONT_OPTIONS[1] :
-		text.tag_configure('sel' ,font='helvetika')
+		customFont = 'helvetika'
 	elif value is FONT_OPTIONS[2] :
-		text.tag_configure('sel' ,font='calibri')
-
+		customFont = 'calibri'
+	customFont=customFont+" %d" %size
+	text.tag_configure('cfont',font=customFont)
+	if text.tag_ranges('sel'):
+		text.tag_add('cfont',SEL_FIRST,SEL_LAST)
+	else:
+		text.config(font=customFont)
+		
 
 #Creating a T-Kinter object 
 root = Tk()
@@ -214,10 +240,8 @@ root.title("TEXT Editor " + filename)
 root.minsize(width=400, height=400)
 root.maxsize(width=root.winfo_screenwidth()-pad,height=root.winfo_screenheight()-pad)
 root.bind("<Control-z>",undo)
-#root.bind("<Control-y>",redo)
-#root.bind("<Key>", add_changes)
-#root.steps = int()
-
+root.bind("<Control-y>",redo)
+root.bind("<Key>", add_changes)
 #Creating the menu bar
 menubar = Menu(root)
 
@@ -339,9 +363,18 @@ findButton.pack(side=LEFT)
 
 #Creating the text frame
 text = Text(root, width=400, height=400 , undo = True)
-text.tag_configure('bt' ,font='helvetica 14 bold')
+
+bold_font = tkFont.Font(text,text.cget("font"))
+bold_font.configure(weight="bold")
+text.tag_configure('bt' ,font=bold_font)
+text.tag_configure('itl' ,font='helvetica 14 italic')
+text.tag_configure('cfont',font='helvetica 14')
+text.tag_configure('size' ,font='helvetica 10 ')
 text.insert('1.0', 'Welcome to the Text Editor by Group 7\nStart Typing here !!!')
+text.steps = int()
+text.changes = [""]
 text.pack()
+
 
 root.config(menu=menubar)
 root.mainloop()
